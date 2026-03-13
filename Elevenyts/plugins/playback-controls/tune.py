@@ -1,8 +1,6 @@
-# In your tune.py file, update the play_next function:
-
 async def play_next(chat_id: int):
     """Play next track in queue"""
-    from HasiiMusic import queue
+    from Elevenyts import queue
     
     logger.info(f"Playing next track for chat {chat_id}")
     
