@@ -138,7 +138,7 @@ bash start
 
 ## 📞 Support & Contact
 
-- **Telegram Channel**: [@Elevenyts](https://t.me/elevenyts)
+- **Telegram Channel**: [@Elevenyts](https://t.me/aarav_info)
 - **Support Group**: [@Elevenyts Music](https://t.me/elevenytsmusic) 
 
 ---
