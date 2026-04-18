@@ -1,5 +1,5 @@
 # ==============================================================================
-# _thumbnails.py - Cinematic Thumbnail Generator (Elevenyts Ultimate)
+# _thumbnails.py - Cinematic Thumbnail Generator (Elevenyts Final Black BG)
 # ==============================================================================
 
 import os
@@ -13,16 +13,10 @@ from Elevenyts import config
 from Elevenyts.helpers import Track
 
 
-# =========================
-# 🔐 DECODE FUNCTION
-# =========================
 def decode_text(encoded: str) -> str:
     return base64.b64decode(encoded).decode("utf-8")
 
 
-# =========================
-# 🎯 TEXT WIDTH CONTROL
-# =========================
 def trim_to_width(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> str:
     ellipsis = "…"
     if font.getlength(text) <= max_w:
@@ -42,7 +36,7 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
-            # 🔥 4X BIG WATERMARK
+            # 🔥 Big watermark
             self.watermark_font = ImageFont.truetype(
                 "Elevenyts/helpers/Raleway-Bold.ttf", 72)
 
@@ -84,68 +78,58 @@ class Thumbnail:
             bg = base.filter(ImageFilter.GaussianBlur(3))
             draw = ImageDraw.Draw(bg)
 
-            left_encoded = "QVJUSVNU"          
-            right_encoded = "RUxFVkVOWVRT"    
+            # 
+            left_text = decode_text("QVJUSVNU")        
+            right_text = decode_text("RUxFVkVOWVRT")   
 
-            left_text = decode_text(left_encoded)
-            right_text = decode_text(right_encoded)
+            colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
 
             # =========================
-            # 🌈 GRADIENT TEXT + BG
-            # =========================
-            def draw_gradient_text_with_bg(draw, position, text, font):
-                x, y = position
+            lx, ly = 40, 30
+            lw = self.watermark_font.getlength(left_text)
+            lh = self.watermark_font.size
 
-                text_w = font.getlength(text)
-                text_h = font.size
-
-                padding_x = 20
-                padding_y = 10
-
-                bg_box = [
-                    x - padding_x,
-                    y - padding_y,
-                    x + text_w + padding_x,
-                    y + text_h + padding_y
-                ]
-
-                draw.rounded_rectangle(
-                    bg_box,
-                    radius=20,
-                    fill=(0, 0, 0, 150)
-                )
-
-                colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
-
-                for i, char in enumerate(text):
-                    color = colors[i % len(colors)]
-                    draw.text((x, y), char, font=font, fill=color)
-                    x += font.getlength(char)
-
-            
-            draw_gradient_text_with_bg(draw, (40, 30), left_text, self.watermark_font)
-
-        
-            text_w = self.watermark_font.getlength(right_text)
-            draw_gradient_text_with_bg(
-                draw,
-                (1280 - text_w - 40, 90),
-                right_text,
-                self.watermark_font
+            draw.rounded_rectangle(
+                [lx - 20, ly - 10, lx + lw + 20, ly + lh + 10],
+                radius=20,
+                fill=(0, 0, 0, 255)
             )
+
+            cx = lx
+            for i, char in enumerate(left_text):
+                draw.text((cx, ly), char, font=self.watermark_font, fill=colors[i % 3])
+                cx += self.watermark_font.getlength(char)
+
+            # 
+            rw = self.watermark_font.getlength(right_text)
+            rh = self.watermark_font.size
+
+            rx = 1280 - rw - 5
+            ry = 720 - rh - 5
+
+            draw.rounded_rectangle(
+                [rx - 20, ry - 10, rx + rw + 20, ry + rh + 10],
+                radius=20,
+                fill=(0, 0, 0, 255)
+            )
+
+            cx = rx
+            for i, char in enumerate(right_text):
+                draw.text((cx, ry), char, font=self.watermark_font, fill=colors[i % 3])
+                cx += self.watermark_font.getlength(char)
 
             # =========================
             # 🌑 BOTTOM GRADIENT
             # =========================
             gradient = Image.new("L", (1, 300))
-            for y in range(300):
-                gradient.putpixel((0, y), int(255 * (y / 300)))
+            for i in range(300):
+                gradient.putpixel((0, i), int(255 * (i / 300)))
 
-            alpha_gradient = gradient.resize((1280, 300))
-            black_img = Image.new("RGBA", (1280, 300), (0, 0, 0, 200))
-            black_img.putalpha(alpha_gradient)
+            alpha = gradient.resize((1280, 300))
+            black = Image.new("RGBA", (1280, 300), (0, 0, 0, 200))
+            black.putalpha(alpha)
 
-            bg.paste(black_img, (0, 420), black_img)
+            bg.paste(black, (0, 420), black)
 
             # =========================
             # 🖼️ THUMB PREVIEW
@@ -158,11 +142,11 @@ class Thumbnail:
             # =========================
             # 🎵 TITLE + META
             # =========================
-            clean_title = re.sub(r"\W+", " ", song.title).title()
+            title = re.sub(r"\W+", " ", song.title).title()
 
             draw.text(
                 (260, 470),
-                trim_to_width(clean_title, self.title_font, 800),
+                trim_to_width(title, self.title_font, 800),
                 fill="white",
                 font=self.title_font
             )
@@ -177,21 +161,18 @@ class Thumbnail:
             # =========================
             # ⏳ PROGRESS BAR
             # =========================
-            BAR_X = 260
-            BAR_Y = 600
+            draw.line([(260, 600), (760, 600)], fill="gray", width=5)
+            draw.line([(260, 600), (480, 600)], fill="red", width=6)
 
-            draw.line([(BAR_X, BAR_Y), (BAR_X + 500, BAR_Y)], fill="gray", width=5)
-            draw.line([(BAR_X, BAR_Y), (BAR_X + 220, BAR_Y)], fill="red", width=6)
+            draw.ellipse([(472, 592), (488, 608)], fill="red")
 
-            draw.ellipse([
-                (BAR_X + 220 - 8, BAR_Y - 8),
-                (BAR_X + 220 + 8, BAR_Y + 8)
-            ], fill="red")
-
-            draw.text((BAR_X, BAR_Y + 15), "00:00", fill="white", font=self.small_font)
-
-            end_text = getattr(song, 'duration', '00:00')
-            draw.text((BAR_X + 430, BAR_Y + 15), end_text, fill="white", font=self.small_font)
+            draw.text((260, 615), "00:00", fill="white", font=self.small_font)
+            draw.text(
+                (700, 615),
+                getattr(song, 'duration', '00:00'),
+                fill="white",
+                font=self.small_font
+            )
 
             # =========================
             # 💾 SAVE
@@ -200,7 +181,7 @@ class Thumbnail:
 
             try:
                 os.remove(temp)
-            except OSError:
+            except:
                 pass
 
             return output
