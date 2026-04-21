@@ -50,13 +50,16 @@ class PreloadManager:
             # Import here to avoid circular dependency
             from Elevenyts import yt
 
-            logger.debug(f"Starting preload for chat {chat_id}: {media.title}")
+            logger.debug(f"Starting preload for chat {chat_id}: {media.title} (video={getattr(media, 'video', False)})")
             
-            # Download the track
+            # ========== FIX: Preserve video flag ==========
+            # Download the track with correct video flag
             if not media.file_path:
-                media.file_path = await yt.download(media.id)
+                # Get video flag from media object
+                is_video = getattr(media, 'video', False)
+                media.file_path = await yt.download(media.id, is_live=getattr(media, 'is_live', False), video=is_video)
                 self._preloaded[chat_id] = media.id
-                logger.debug(f"Preload complete for chat {chat_id}: {media.title}")
+                logger.debug(f"Preload complete for chat {chat_id}: {media.title} (video={is_video})")
             else:
                 logger.debug(f"Track already has file_path for chat {chat_id}: {media.title}")
                 self._preloaded[chat_id] = media.id

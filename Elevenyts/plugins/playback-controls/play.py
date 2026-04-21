@@ -82,7 +82,7 @@ def playlist_to_queue(chat_id: int, tracks: list) -> str:
     return text
 
 @app.on_message(
-    filters.command(["play", "playforce", "cplay", "cplayforce"])
+    filters.command(["play", "playforce", "vplay", "vplayforce", "cplay", "cplayforce"])
     & filters.group
     & ~app.bl_users
 )
@@ -94,12 +94,21 @@ async def play_hndlr(
     force: bool = False,
     url: str = None,
     cplay: bool = False,
+    video: bool = False,
 ) -> None:
     # Auto-delete command message
     try:
         await m.delete()
     except Exception:
         pass
+    
+    # ========== DETECT VIDEO COMMANDS ==========
+    command = m.command[0].lower()
+    if command in ["vplay", "vplayforce"]:
+        video = True
+        if "force" in command:
+            force = True
+    # ===========================================
     
     # Handle channel play mode
     chat_id = m.chat.id
@@ -224,7 +233,7 @@ async def play_hndlr(
             tracks.remove(file)
             file.message_id = sent.id
         else:
-            file = await yt.search(url, sent.id)
+            file = await yt.search(url, sent.id, video=video)
 
         if not file:
             await safe_edit(
@@ -235,7 +244,7 @@ async def play_hndlr(
 
     elif len(m.command) >= 2:
         query = " ".join(m.command[1:])
-        file = await yt.search(query, sent.id)
+        file = await yt.search(query, sent.id, video=video)
         if not file:
             await safe_edit(
                 sent,
@@ -245,6 +254,9 @@ async def play_hndlr(
 
     if not file:
         return
+
+    # Set video attribute in file
+    file.video = video
 
     # Skip duration check for live streams
     if not file.is_live and file.duration_sec > config.DURATION_LIMIT:
@@ -302,7 +314,7 @@ async def play_hndlr(
             return
 
     if not file.file_path:
-        file.file_path = await yt.download(file.id, is_live=file.is_live)
+        file.file_path = await yt.download(file.id, is_live=file.is_live, video=video)
         if not file.file_path:
             await safe_edit(
                 sent,
@@ -345,27 +357,6 @@ async def play_hndlr(
                 sent,
                 f"<blockquote>❌ Playback error:\n{error_msg}\n\n"
                 f"Support: {config.SUPPORT_CHAT}</blockquote>"
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
             )
         return
     if not tracks:
